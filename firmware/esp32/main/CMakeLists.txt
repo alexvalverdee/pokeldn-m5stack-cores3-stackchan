@@ -9,9 +9,6 @@ else()
     message(FATAL_ERROR "pokeldn supports esp32, esp32s2, esp32s3, esp32c3 and esp32c6 targets only")
 endif()
 
-# The screen's panel, POKELDN_DISPLAY in the environment of idf.py: OLED (the default, an SSD1306 on
-# I2C, probed), E32R40T (that board's ST7796S, classic ESP32) or SZPI (the LCKFB szpi board's ST7789 and
-# its ES8311 speaker, ESP32-S3). docs/hardware_esp32.md, The screen.
 set(POKELDN_DISPLAY "$ENV{POKELDN_DISPLAY}")
 if(idf_target STREQUAL "esp32s2" AND NOT POKELDN_DISPLAY)
     set(POKELDN_DISPLAY NONE)
@@ -25,13 +22,15 @@ elseif(POKELDN_DISPLAY STREQUAL "SZPI" AND idf_target STREQUAL "esp32s3")
     set(panel_source "panel_spi.c" "board_szpi.c" "speaker_es8311.c" "sfx.c")
     set(panel_driver esp_driver_spi esp_driver_i2c esp_driver_i2s)
     set(speaker 1)
+elseif(POKELDN_DISPLAY STREQUAL "STACKCHAN" AND idf_target STREQUAL "esp32s3")
+    set(panel_source "panel_stackchan.cpp")
 elseif(POKELDN_DISPLAY STREQUAL "NONE" AND idf_target STREQUAL "esp32s2")
     set(panel_source "panel_none.c")
 elseif(POKELDN_DISPLAY STREQUAL "OLED" AND NOT idf_target STREQUAL "esp32s2")
     set(panel_source "panel_oled.c")
     set(panel_driver esp_driver_i2c)
 else()
-    message(FATAL_ERROR "POKELDN_DISPLAY=${POKELDN_DISPLAY}: OLED, E32R40T on the esp32 target, SZPI on esp32s3, or NONE on esp32s2")
+    message(FATAL_ERROR "POKELDN_DISPLAY=${POKELDN_DISPLAY}: OLED, E32R40T on esp32, SZPI/STACKCHAN on esp32s3, or NONE on esp32s2")
 endif()
 
 if(DEFINED ENV{POKELDN_BLE})
@@ -47,20 +46,26 @@ idf_component_register(
     PRIV_REQUIRES esp_app_format esp_wifi wpa_supplicant ${wire_driver} esp_driver_ledc esp_driver_gpio ${panel_driver} esp_timer nvs_flash esp_event mbedtls zstd ${ble_component})
 
 string(TOLOWER "${POKELDN_DISPLAY}" display_name)
+if(POKELDN_DISPLAY STREQUAL "STACKCHAN")
+    set(display_name "szpi")
+endif()
+
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../version.txt" fw_version)
+if(DEFINED ENV{POKELDN_FIRMWARE_VERSION})
+    set(fw_version "$ENV{POKELDN_FIRMWARE_VERSION}")
+endif()
+
 target_compile_definitions(${COMPONENT_LIB} PRIVATE POKELDN_DISPLAY_${POKELDN_DISPLAY}
                            POKELDN_DISPLAY_NAME="${display_name}"
-                           POKELDN_FIRMWARE_VERSION="${POKELDN_FIRMWARE_VERSION}")
+                           POKELDN_FIRMWARE_VERSION="${fw_version}")
 if(speaker)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE POKELDN_SPEAKER=1)
 endif()
 
-# A diagnostic build: POKELDN_USB_BEACON=1 in the environment of idf.py (usbwatch.c).
 if(DEFINED ENV{POKELDN_USB_BEACON})
     target_compile_definitions(${COMPONENT_LIB} PRIVATE POKELDN_USB_BEACON=1)
 endif()
 
-# The Bluetooth LE host link (ble.c): POKELDN_BLE=1 in the environment of idf.py, with
-# sdkconfig.defaults.ble. docs/hardware_esp32.md, Bluetooth.
 if(DEFINED ENV{POKELDN_BLE})
     target_compile_definitions(${COMPONENT_LIB} PRIVATE POKELDN_BLE=1)
 endif()
