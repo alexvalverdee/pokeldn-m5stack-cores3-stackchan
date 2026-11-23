@@ -19,6 +19,10 @@ the board on the phone's USB port, and on iPhone and iPad, with the board reache
 Command-line tools run from source, and the docs describe the games' local wireless protocols. AI tools helped reverse engineer
 those protocols and write parts of the code.
 
+THIS FORK ADDS COMPATIBILITY WITH M5STACK CORES3 AND STACKCHAN SCREENS WITH M5GFX SUPPORT ON FIRMWARE .BIN.
+
+ON THIS FORK ONLY WILL BE RELEASED THE ESP32S3 BIN FOR THE BOARDS.
+
 ## Supported games
 
 | | [FRLG](docs/frlg.md) | [LGPE](docs/lgpe.md) | [SwSh](docs/swsh.md) | [BDSP](docs/bdsp.md) | [PLA](docs/pla.md) | [SV](docs/sv.md) | [PLZA](docs/za.md) |
